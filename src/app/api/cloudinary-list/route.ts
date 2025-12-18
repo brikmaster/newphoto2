@@ -47,13 +47,6 @@ interface CloudinaryListResponse {
 
 export async function POST(request: NextRequest) {
   try {
-    // Debug logging
-    console.log('Cloudinary List API Debug:', {
-      cloudName: process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-      apiKey: process.env.CLOUDINARY_API_KEY ? '***' : 'MISSING',
-      apiSecret: process.env.CLOUDINARY_API_SECRET ? '***' : 'MISSING',
-      hasCloudinaryConfig: !!(process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME)
-    });
 
     // Validate Cloudinary configuration
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;

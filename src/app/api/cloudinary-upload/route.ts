@@ -267,7 +267,7 @@ async function uploadBase64ToCloudinary(
       base64String,
       {
         folder: folderPath,
-        public_id: `base64_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        public_id: `base64_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
         tags,
         resource_type: 'auto',
         allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],

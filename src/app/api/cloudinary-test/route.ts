@@ -10,12 +10,6 @@ cloudinary.config({
 
 export async function GET(request: NextRequest) {
   try {
-    // Debug logging
-    console.log('Cloudinary Test API Debug:', {
-      cloudName: process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-      apiKey: process.env.CLOUDINARY_API_KEY ? '***' : 'MISSING',
-      apiSecret: process.env.CLOUDINARY_API_SECRET ? '***' : 'MISSING',
-    });
 
     // Test basic Cloudinary connection by getting account info
     const accountInfo = await new Promise((resolve, reject) => {
