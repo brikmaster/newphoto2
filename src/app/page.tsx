@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import GameSelector from '@/components/GameSelector';
 
 export default function Home() {
   const router = useRouter();
@@ -10,6 +11,8 @@ export default function Home() {
     userId: '',
     gameNumber: '',
   });
+  const [selectedGameId, setSelectedGameId] = useState<number | null>(null);
+  const [selectedGameName, setSelectedGameName] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -17,12 +20,20 @@ export default function Home() {
   useEffect(() => {
     const savedUserId = sessionStorage.getItem('photoStream_userId');
     const savedGameNumber = sessionStorage.getItem('photoStream_gameNumber');
+    const savedGameId = sessionStorage.getItem('photoStream_gameId');
+    const savedGameName = sessionStorage.getItem('photoStream_gameName');
     
-    if (savedUserId && savedGameNumber) {
-      setFormData({
+    if (savedUserId) {
+      setFormData(prev => ({
+        ...prev,
         userId: savedUserId,
-        gameNumber: savedGameNumber,
-      });
+        gameNumber: savedGameNumber || '',
+      }));
+    }
+    
+    if (savedGameId && savedGameName) {
+      setSelectedGameId(parseInt(savedGameId));
+      setSelectedGameName(savedGameName);
     }
   }, []);
 
@@ -31,14 +42,12 @@ export default function Home() {
 
     if (!formData.userId.trim()) {
       newErrors.userId = 'User ID is required';
-    } else if (formData.userId.trim().length < 3) {
-      newErrors.userId = 'User ID must be at least 3 characters';
+    } else if (!/^\d+$/.test(formData.userId.trim())) {
+      newErrors.userId = 'User ID must be numeric';
     }
 
-    if (!formData.gameNumber.trim()) {
-      newErrors.gameNumber = 'Game Number is required';
-    } else if (!/^\d+$/.test(formData.gameNumber.trim())) {
-      newErrors.gameNumber = 'Game Number must be numeric';
+    if (!selectedGameId) {
+      newErrors.game = 'Please select a game from the list';
     }
 
     setErrors(newErrors);
@@ -52,11 +61,34 @@ export default function Home() {
       [name]: value,
     }));
     
+    // Clear game selection when user ID changes
+    if (name === 'userId') {
+      setSelectedGameId(null);
+      setSelectedGameName('');
+    }
+    
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
         ...prev,
         [name]: '',
+      }));
+    }
+  };
+
+  const handleGameSelect = (gameId: number, gameName: string) => {
+    setSelectedGameId(gameId);
+    setSelectedGameName(gameName);
+    setFormData(prev => ({
+      ...prev,
+      gameNumber: gameId.toString(),
+    }));
+    
+    // Clear game error when game is selected
+    if (errors.game) {
+      setErrors(prev => ({
+        ...prev,
+        game: '',
       }));
     }
   };
@@ -74,6 +106,8 @@ export default function Home() {
       // Store in sessionStorage
       sessionStorage.setItem('photoStream_userId', formData.userId.trim());
       sessionStorage.setItem('photoStream_gameNumber', formData.gameNumber.trim());
+      sessionStorage.setItem('photoStream_gameId', selectedGameId!.toString());
+      sessionStorage.setItem('photoStream_gameName', selectedGameName);
       
       // Navigate to upload page with query parameters
       router.push(`/upload?userId=${encodeURIComponent(formData.userId.trim())}&gameNumber=${encodeURIComponent(formData.gameNumber.trim())}`);
@@ -120,7 +154,7 @@ export default function Home() {
               {/* User ID Input */}
               <div>
                 <label htmlFor="userId" className="block text-sm font-semibold text-gray-700 mb-2">
-                  User ID *
+                  ScoreStream User ID *
                 </label>
                 <input
                   type="text"
@@ -133,7 +167,7 @@ export default function Home() {
                       ? 'border-red-500 bg-red-50' 
                       : 'border-gray-300 hover:border-gray-400 focus:border-[#1b95e5]'
                   }`}
-                  placeholder="Enter your User ID"
+                  placeholder="Enter your ScoreStream User ID (numbers only)"
                   autoComplete="off"
                 />
                 {errors.userId && (
@@ -144,36 +178,48 @@ export default function Home() {
                     {errors.userId}
                   </p>
                 )}
+                <p className="mt-2 text-sm text-gray-600">
+                  Enter your ScoreStream User ID to automatically load your games
+                </p>
               </div>
 
-              {/* Game Number Input */}
-              <div>
-                <label htmlFor="gameNumber" className="block text-sm font-semibold text-gray-700 mb-2">
-                  Game Number *
-                </label>
-                <input
-                  type="text"
-                  id="gameNumber"
-                  name="gameNumber"
-                  value={formData.gameNumber}
-                  onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border rounded-lg text-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#1b95e5] focus:border-transparent ${
-                    errors.gameNumber 
-                      ? 'border-red-500 bg-red-50' 
-                      : 'border-gray-300 hover:border-gray-400 focus:border-[#1b95e5]'
-                  }`}
-                  placeholder="Enter Game Number"
-                  autoComplete="off"
-                />
-                {errors.gameNumber && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center">
-                    <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              {/* Game Selection */}
+              {formData.userId.trim() && /^\d+$/.test(formData.userId.trim()) && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Select Game *
+                  </label>
+                  <GameSelector
+                    userId={formData.userId.trim()}
+                    onGameSelect={handleGameSelect}
+                    selectedGameId={selectedGameId || undefined}
+                  />
+                  {errors.game && (
+                    <p className="mt-2 text-sm text-red-600 flex items-center">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {errors.game}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Selected Game Display */}
+              {selectedGameId && selectedGameName && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    {errors.gameNumber}
-                  </p>
-                )}
-              </div>
+                    <div>
+                      <div className="text-sm font-medium text-green-800">Selected Game:</div>
+                      <div className="text-sm text-green-700">{selectedGameName}</div>
+                      <div className="text-xs text-green-600">Game ID: {selectedGameId}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Submit Button */}
               <button
