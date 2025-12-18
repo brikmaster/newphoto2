@@ -5,6 +5,7 @@ A modern, production-ready photo upload and gallery application built with Next.
 ## ✨ Features
 
 ### Core Functionality
+- 🎯 **ScoreStream Integration** - Automatic game lookup using ScoreStream User ID
 - 🖼️ **Drag & Drop Upload** - Intuitive file uploading with progress tracking
 - 🎨 **Photo Gallery** - Beautiful grid layout with lightbox viewing
 - ✂️ **Photo Editing** - Basic editing tools and filters
@@ -95,6 +96,7 @@ src/
 │   ├── api/               # API routes
 │   │   ├── cloudinary-upload/    # Upload endpoint
 │   │   ├── cloudinary-list/      # List photos endpoint
+│   │   ├── scorestream-proxy/    # ScoreStream API proxy
 │   │   ├── cloudinary-webhook/   # Webhook handler
 │   │   └── health/              # Health check
 │   ├── gallery/           # Gallery page
@@ -103,10 +105,12 @@ src/
 ├── components/           # React components
 │   ├── CloudinaryGallery.tsx    # Gallery component
 │   ├── CloudinaryUploader.tsx   # Upload component
+│   ├── GameSelector.tsx          # ScoreStream game selector
 │   ├── PhotoEditor.tsx          # Editor component
 │   └── Navigation.tsx           # Navigation
 ├── lib/                  # Utilities and configurations
 │   ├── cloudinary.ts     # Cloudinary configuration
+│   ├── scorestream.ts    # ScoreStream API integration
 │   ├── env.ts            # Environment validation
 │   ├── error-tracking.ts # Sentry integration
 │   └── rate-limiter.ts   # Rate limiting
