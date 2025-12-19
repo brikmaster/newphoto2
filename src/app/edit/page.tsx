@@ -112,6 +112,27 @@ function EditPageContent() {
     }
   }, []);
 
+  // Navigate to gallery with photo data
+  const navigateToGallery = useCallback((photoData: Photo[]) => {
+    try {
+      // Get userId and gameNumber from sessionStorage
+      const userId = sessionStorage.getItem('photoStream_userId');
+      const gameNumber = sessionStorage.getItem('photoStream_gameNumber');
+
+      // Navigate to gallery with new dynamic route
+      if (userId && gameNumber) {
+        router.push(`/gallery/${encodeURIComponent(userId)}/${encodeURIComponent(gameNumber)}`);
+      } else {
+        // Fallback to main gallery page if no user/game info
+        router.push('/gallery');
+      }
+    } catch (error) {
+      console.error('Error navigating to gallery:', error);
+      // Fallback navigation
+      router.push('/gallery');
+    }
+  }, [router]);
+
   // Handle publishing all changes to Cloudinary
   const handlePublish = useCallback(async (updatedPhotos: Photo[]) => {
     try {
@@ -166,28 +187,7 @@ function EditPageContent() {
       console.error('Error publishing changes:', error);
       setError('Failed to publish changes. Please try again.');
     }
-  }, [updatePhotoMetadata]);
-
-  // Navigate to gallery with photo data
-  const navigateToGallery = useCallback((photoData: Photo[]) => {
-    try {
-      // Get userId and gameNumber from sessionStorage
-      const userId = sessionStorage.getItem('photoStream_userId');
-      const gameNumber = sessionStorage.getItem('photoStream_gameNumber');
-
-      // Navigate to gallery with new dynamic route
-      if (userId && gameNumber) {
-        router.push(`/gallery/${encodeURIComponent(userId)}/${encodeURIComponent(gameNumber)}`);
-      } else {
-        // Fallback to main gallery page if no user/game info
-        router.push('/gallery');
-      }
-    } catch (error) {
-      console.error('Error navigating to gallery:', error);
-      // Fallback navigation
-      router.push('/gallery');
-    }
-  }, [router]);
+  }, [updatePhotoMetadata, navigateToGallery]);
 
   // Handle photo updates from PhotoEditor
   const handlePhotoUpdates = useCallback((updatedPhotos: Photo[]) => {

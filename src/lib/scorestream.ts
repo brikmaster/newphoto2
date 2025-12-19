@@ -136,21 +136,10 @@ export class ScoreStreamService {
         return null;
       }
 
-      // Process the game data - you'd implement this based on the actual API response
-      // This is a simplified version
-      const gameData = response.result;
-      
-      return {
-        gameId: gameData.gameId,
-        homeTeamId: gameData.homeTeamId,
-        awayTeamId: gameData.awayTeamId,
-        homeTeamName: gameData.homeTeamName,
-        awayTeamName: gameData.awayTeamName,
-        sportName: gameData.sportName,
-        startDateTime: gameData.startDateTime,
-        gameTitle: gameData.gameTitle,
-        lastScore: gameData.lastScore,
-      };
+      // For now, this method is not fully implemented since we use getUserGames instead
+      // When implementing, you'd need to define a proper response type for individual games
+      console.warn('getGame method not fully implemented - use getUserGames instead');
+      return null;
     } catch (error) {
       console.error('Error fetching game from ScoreStream:', error);
       return null;
