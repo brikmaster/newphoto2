@@ -28,7 +28,7 @@ export default function GameSelector({ userId, onGameSelect, selectedGameId }: G
       try {
         const userGames = await ScoreStreamService.getUserGames(userId);
         setGames(userGames);
-        
+
         if (userGames.length === 0) {
           setError('No games found for this user ID');
         }

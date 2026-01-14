@@ -11,5 +11,10 @@ NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_upload_preset_here
 # Optional: Cloudinary Folder (for organizing uploads)
 CLOUDINARY_UPLOAD_FOLDER=photo-uploads
 
+# ScoreStream API Configuration
+SCORESTREAM_API_KEY=your_scorestream_api_key_here
+# Optional: Override the default ScoreStream API URL
+# SCORESTREAM_API_URL=https://api.scorestream.com
+
 
 

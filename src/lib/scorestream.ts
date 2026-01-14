@@ -54,68 +54,62 @@ export class ScoreStreamService {
   private static readonly API_BASE = process.env.SCORESTREAM_API_BASE || 'https://api.scorestream.com';
   
   /**
-   * Fetch user activity cards to get games associated with a user
+   * Fetch games associated with a user
    */
   static async getUserGames(userId: string): Promise<ScoreStreamGame[]> {
     try {
-      // Call ScoreStream API - you'll need to implement the actual API call here
-      // This would be the user.activity.cards.search method
-      const response = await this.callScoreStreamAPI('user.activity.cards.search', {
+      // Call ScoreStream API to get user's games
+      const response = await this.callScoreStreamAPI('users.games.search', {
         userId: parseInt(userId),
-        limit: 50, // Adjust as needed
-        cardTypes: ['game']
       });
 
       if (!response.result) {
         throw new Error('Invalid ScoreStream response');
       }
 
-      const { collections } = response.result;
+      const { collections, gameIds } = response.result as any;
       const games: ScoreStreamGame[] = [];
-      
-      // Process the collections to create game objects
-      const gameCards = collections.cardCollection?.list || [];
-      const gameData = collections.gameCollection?.list || [];
-      const teamData = collections.teamCollection?.list || [];
-      
+
+      // Get data from collections
+      const gameData = collections?.gameCollection?.list || [];
+      const teamData = collections?.teamCollection?.list || [];
+
       // Create a map of teams for quick lookup
       const teamMap = new Map();
       teamData.forEach((team: any) => {
         teamMap.set(team.teamId, team);
       });
-      
+
       // Create a map of game details
       const gameMap = new Map();
       gameData.forEach((game: any) => {
         gameMap.set(game.gameId, game);
       });
-      
-      // Process game cards and combine with game details
-      gameCards.forEach((card: ScoreStreamCard) => {
-        if (card.cardType === 'game') {
-          const gameDetails = gameMap.get(card.gameId);
-          if (gameDetails) {
-            const homeTeam = teamMap.get(gameDetails.homeTeamId);
-            const awayTeam = teamMap.get(gameDetails.awayTeamId);
-            
-            games.push({
-              gameId: card.gameId,
-              homeTeamId: gameDetails.homeTeamId,
-              awayTeamId: gameDetails.awayTeamId,
-              homeTeamName: homeTeam?.teamName || `Team ${gameDetails.homeTeamId}`,
-              awayTeamName: awayTeam?.teamName || `Team ${gameDetails.awayTeamId}`,
-              sportName: gameDetails.sportName,
-              startDateTime: gameDetails.startDateTime,
-              gameTitle: gameDetails.gameTitle,
-              lastScore: gameDetails.lastScore,
-            });
-          }
+
+      // Process each gameId
+      (gameIds || []).forEach((gameId: number) => {
+        const gameDetails = gameMap.get(gameId);
+        if (gameDetails) {
+          const homeTeam = teamMap.get(gameDetails.homeTeamId);
+          const awayTeam = teamMap.get(gameDetails.awayTeamId);
+
+          games.push({
+            gameId: gameId,
+            homeTeamId: gameDetails.homeTeamId,
+            awayTeamId: gameDetails.awayTeamId,
+            homeTeamName: homeTeam?.teamName || homeTeam?.minTeamName || `Team ${gameDetails.homeTeamId}`,
+            awayTeamName: awayTeam?.teamName || awayTeam?.minTeamName || `Team ${gameDetails.awayTeamId}`,
+            sportName: gameDetails.sportName,
+            startDateTime: gameDetails.startDateTime,
+            gameTitle: gameDetails.gameTitle,
+            lastScore: gameDetails.lastScore,
+          });
         }
       });
-      
+
       // Sort games by date (most recent first)
       games.sort((a, b) => new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime());
-      
+
       return games;
     } catch (error) {
       console.error('Error fetching user games from ScoreStream:', error);
