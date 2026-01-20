@@ -60,7 +60,7 @@ export class ScoreStreamService {
     try {
       // Call ScoreStream API - you'll need to implement the actual API call here
       // This would be the user.activity.cards.search method
-      const response = await this.callScoreStreamAPI('user.activity.cards.search', {
+      const response = await this.callScoreStreamAPI('users.activity.cards.search', {
         userId: parseInt(userId),
         limit: 50, // Adjust as needed
         cardTypes: ['game']
@@ -138,8 +138,8 @@ export class ScoreStreamService {
 
       // Process the game data - you'd implement this based on the actual API response
       // This is a simplified version
-      const gameData = response.result;
-      
+      const gameData = response.result as any;
+
       return {
         gameId: gameData.gameId,
         homeTeamId: gameData.homeTeamId,
