@@ -1,5 +1,67 @@
 // ScoreStream photo posting service
 
+// Compress files larger than 4MB to stay under Vercel's limit
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
+const MAX_DIMENSION = 2500;
+const JPEG_QUALITY = 0.90;
+
+/**
+ * Compress an image file if it exceeds the size limit
+ */
+async function compressIfNeeded(file: File): Promise<File> {
+  if (file.size <= MAX_FILE_SIZE) {
+    console.log(`File ${file.name} is ${(file.size / 1024 / 1024).toFixed(2)}MB - under 4MB limit`);
+    return file;
+  }
+
+  console.log(`File ${file.name} is ${(file.size / 1024 / 1024).toFixed(2)}MB - compressing to fit under 4MB...`);
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    img.onload = () => {
+      let { width, height } = img;
+
+      // Only resize if larger than max dimension
+      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+        if (width > height) {
+          height = (height / width) * MAX_DIMENSION;
+          width = MAX_DIMENSION;
+        } else {
+          width = (width / height) * MAX_DIMENSION;
+          height = MAX_DIMENSION;
+        }
+      }
+
+      canvas.width = width;
+      canvas.height = height;
+      ctx?.drawImage(img, 0, 0, width, height);
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            console.log(`Compressed ${file.name}: ${(file.size / 1024 / 1024).toFixed(2)}MB -> ${(compressedFile.size / 1024 / 1024).toFixed(2)}MB`);
+            resolve(compressedFile);
+          } else {
+            reject(new Error('Failed to compress image'));
+          }
+        },
+        'image/jpeg',
+        JPEG_QUALITY
+      );
+    };
+
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 export interface PostPhotoParams {
   gameId: number;
   file: File;
@@ -29,10 +91,13 @@ export interface BatchPostResult {
  */
 export async function postPhotoToScoreStream(params: PostPhotoParams): Promise<PostResult> {
   try {
+    // Only compress if file is very large (>10MB)
+    const fileToUpload = await compressIfNeeded(params.file);
+
     const formData = new FormData();
     formData.append('method', 'games.posts.add');
     formData.append('gameId', params.gameId.toString());
-    formData.append('backgroundPicture', params.file);
+    formData.append('backgroundPicture', fileToUpload);
 
     if (params.userText) {
       formData.append('userText', params.userText);
