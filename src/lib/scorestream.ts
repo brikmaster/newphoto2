@@ -67,10 +67,17 @@ export class ScoreStreamService {
       });
 
       if (!response.result) {
+        console.error('ScoreStream: No result in response', response);
         throw new Error('Invalid ScoreStream response');
       }
 
       const { collections } = response.result;
+      console.log('ScoreStream: Got collections', {
+        hasCardCollection: !!collections?.cardCollection,
+        cardCount: collections?.cardCollection?.list?.length || 0,
+        hasGameCollection: !!collections?.gameCollection,
+        gameCount: collections?.gameCollection?.list?.length || 0,
+      });
       const games: ScoreStreamGame[] = [];
       
       // Process the collections to create game objects
@@ -115,7 +122,8 @@ export class ScoreStreamService {
       
       // Sort games by date (most recent first)
       games.sort((a, b) => new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime());
-      
+
+      console.log('ScoreStream: Processed games count:', games.length);
       return games;
     } catch (error) {
       console.error('Error fetching user games from ScoreStream:', error);

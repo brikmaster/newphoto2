@@ -13,8 +13,11 @@ export async function GET() {
       memory: process.env.NODE_ENV === 'production' ? undefined : process.memoryUsage(),
       checks: {
         environment: true,
-        cloudinary: !!(process.env.CLOUDINARY_CLOUD_NAME || process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME),
-        redis: !!process.env.REDIS_URL,
+        scorestream_api_key: !!process.env.SCORESTREAM_API_KEY,
+        scorestream_api_key_length: process.env.SCORESTREAM_API_KEY?.length || 0,
+        scorestream_access_token: !!process.env.SCORESTREAM_ACCESS_TOKEN,
+        scorestream_access_token_length: process.env.SCORESTREAM_ACCESS_TOKEN?.length || 0,
+        scorestream_api_base: process.env.SCORESTREAM_API_BASE || 'not set',
       },
     };
 

@@ -15,32 +15,50 @@ export default function GameSelector({ userId, onGameSelect, selectedGameId }: G
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userId) {
+    if (!userId || userId.trim() === '') {
       setGames([]);
       setError(null);
       return;
     }
 
+    // Debounce and track current request
+    let cancelled = false;
+    const currentUserId = userId;
+
     const fetchGames = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
-        const userGames = await ScoreStreamService.getUserGames(userId);
-        setGames(userGames);
-        
-        if (userGames.length === 0) {
-          setError('No games found for this user ID');
+        const userGames = await ScoreStreamService.getUserGames(currentUserId);
+
+        // Only update state if this request wasn't cancelled and userId hasn't changed
+        if (!cancelled) {
+          setGames(userGames);
+
+          if (userGames.length === 0) {
+            setError('No games found for this user ID');
+          }
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch games');
-        setGames([]);
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to fetch games');
+          setGames([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchGames();
+    // Debounce by 300ms to avoid rapid successive calls
+    const timeoutId = setTimeout(fetchGames, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   }, [userId]);
 
   if (!userId) {
