@@ -1,3 +1,5 @@
+import { getAccessToken } from './auth';
+
 // ScoreStream API integration for game lookup
 export interface ScoreStreamGame {
   gameId: number;
@@ -193,8 +195,8 @@ export class ScoreStreamService {
       jsonrpc: "2.0",
       method,
       params: {
-        apiKey: this.API_KEY,
-        accessToken: this.ACCESS_TOKEN,
+        ...(this.API_KEY ? { apiKey: this.API_KEY } : {}),
+        accessToken: getAccessToken() || this.ACCESS_TOKEN,
         ...params,
       },
       id: 1,
