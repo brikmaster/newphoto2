@@ -1,6 +1,9 @@
 // ScoreStream photo posting service
 
-// Compress files larger than 4MB to stay under Vercel's limit
+const SCORESTREAM_API_URL = process.env.NEXT_PUBLIC_SCORESTREAM_API_URL || 'https://scorestream.com/api/';
+const SCORESTREAM_API_KEY = process.env.NEXT_PUBLIC_SCORESTREAM_API_KEY || '';
+const SCORESTREAM_ACCESS_TOKEN = process.env.NEXT_PUBLIC_SCORESTREAM_ACCESS_TOKEN || '';
+
 const MAX_FILE_SIZE = 4 * 1024 * 1024;
 const MAX_DIMENSION = 2500;
 const JPEG_QUALITY = 0.90;
@@ -94,33 +97,58 @@ export async function postPhotoToScoreStream(params: PostPhotoParams): Promise<P
     // Only compress if file is very large (>10MB)
     const fileToUpload = await compressIfNeeded(params.file);
 
-    const formData = new FormData();
-    formData.append('method', 'games.posts.add');
-    formData.append('gameId', params.gameId.toString());
-    formData.append('backgroundPicture', fileToUpload);
+    // Build params for the JSON-RPC request
+    const rpcParams: Record<string, any> = {
+      accessToken: SCORESTREAM_ACCESS_TOKEN,
+      gameId: params.gameId,
+    };
 
-    if (params.userText) {
-      formData.append('userText', params.userText);
+    if (SCORESTREAM_API_KEY) {
+      rpcParams.apiKey = SCORESTREAM_API_KEY;
     }
+
+    // Combine userText and hashTags
+    let combinedText = params.userText || '';
     if (params.hashTags && params.hashTags.length > 0) {
-      formData.append('hashTags', JSON.stringify(params.hashTags));
+      const tagsString = params.hashTags.join(' ');
+      combinedText = combinedText ? `${combinedText}\n\nTags: ${tagsString}` : `Tags: ${tagsString}`;
+    }
+    if (combinedText) {
+      rpcParams.userText = combinedText;
     }
     if (params.teamSelection) {
-      formData.append('teamSelection', params.teamSelection);
+      rpcParams.teamSelection = params.teamSelection;
     }
 
-    const response = await fetch('/api/scorestream-proxy', {
+    const jsonRpcRequest = {
+      jsonrpc: "2.0",
+      method: "games.posts.add",
+      params: rpcParams,
+      id: 1,
+    };
+
+    const formData = new FormData();
+    formData.append('request', JSON.stringify(jsonRpcRequest));
+    formData.append('backgroundPicture', fileToUpload);
+
+    const response = await fetch(SCORESTREAM_API_URL, {
       method: 'POST',
       body: formData,
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      data = { error: 'Invalid response from ScoreStream API' };
+    }
 
     if (!response.ok || data.error) {
       return {
         success: false,
         fileName: params.file.name,
-        error: data.error || data.details?.message || `HTTP ${response.status}`,
+        error: data.error?.message || data.error || `HTTP ${response.status}`,
       };
     }
 

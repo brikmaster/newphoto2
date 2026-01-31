@@ -51,7 +51,9 @@ export interface ScoreStreamResponse {
 }
 
 export class ScoreStreamService {
-  private static readonly API_BASE = process.env.SCORESTREAM_API_BASE || 'https://api.scorestream.com';
+  private static readonly API_URL = process.env.NEXT_PUBLIC_SCORESTREAM_API_URL || 'https://scorestream.com/api/';
+  private static readonly API_KEY = process.env.NEXT_PUBLIC_SCORESTREAM_API_KEY || '';
+  private static readonly ACCESS_TOKEN = process.env.NEXT_PUBLIC_SCORESTREAM_ACCESS_TOKEN || '';
   
   /**
    * Fetch user activity cards to get games associated with a user
@@ -182,18 +184,23 @@ export class ScoreStreamService {
    * You'll need to implement this based on your ScoreStream API access method
    */
   private static async callScoreStreamAPI(method: string, params: any): Promise<ScoreStreamResponse> {
-    // This is a placeholder - you'll need to implement the actual API call
-    // based on how you access the ScoreStream API (direct HTTP, proxy endpoint, etc.)
-    
-    const response = await fetch('/api/scorestream-proxy', {
+    const jsonRpcRequest = {
+      jsonrpc: "2.0",
+      method,
+      params: {
+        ...params,
+        apiKey: this.API_KEY,
+        accessToken: this.ACCESS_TOKEN,
+      },
+      id: 1,
+    };
+
+    const response = await fetch(this.API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        method,
-        params
-      })
+      body: JSON.stringify(jsonRpcRequest),
     });
 
     if (!response.ok) {
