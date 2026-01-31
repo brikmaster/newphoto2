@@ -155,6 +155,35 @@ export class ScoreStreamService {
   }
 
   /**
+   * Get the current user from an accessToken.
+   * Tries the `users.me` method — swap the method name once the correct one is confirmed.
+   */
+  static async getCurrentUser(accessToken: string): Promise<{ userId: number; userName?: string }> {
+    const methodsToTry = ['users.me', 'auth.me', 'users.get'];
+
+    let lastError: Error | null = null;
+    for (const method of methodsToTry) {
+      try {
+        const response = await this.callScoreStreamAPI(method, { accessToken });
+
+        if (response.result) {
+          const result = response.result as any;
+          const userId = result.userId ?? result.user?.userId ?? result.id ?? result.user?.id;
+          const userName = result.userName ?? result.user?.userName ?? result.name ?? result.user?.name;
+
+          if (userId) {
+            return { userId: Number(userId), userName };
+          }
+        }
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+      }
+    }
+
+    throw lastError ?? new Error('Unable to identify user from accessToken');
+  }
+
+  /**
    * Call ScoreStream API directly via JSON-RPC
    */
   private static async callScoreStreamAPI(method: string, params: any): Promise<ScoreStreamResponse> {
