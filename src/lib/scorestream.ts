@@ -159,8 +159,24 @@ export class ScoreStreamService {
    * Tries the `users.me` method — swap the method name once the correct one is confirmed.
    */
   static async getCurrentUser(accessToken: string): Promise<{ userId: number; userName?: string }> {
-    const response = await this.callScoreStreamAPI('users.checkAccessToken', { accessToken });
-    const result = response.result as any;
+    // Call directly without apiKey — users.checkAccessToken only needs the accessToken
+    const response = await fetch(this.API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'users.checkAccessToken',
+        params: { accessToken },
+        id: 1,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`ScoreStream API error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const result = data.result;
 
     if (result?.userId) {
       return { userId: Number(result.userId), userName: result.userName };
