@@ -16,6 +16,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 🔎 Debug: show what repo/branch GitHub thinks this is
+      - name: Debug GitHub context
+        run: |
+          echo "repo: $GITHUB_REPOSITORY"
+          echo "ref:  $GITHUB_REF"
+          echo "sha:  $GITHUB_SHA"
+          echo "actor:$GITHUB_ACTOR"
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -33,6 +41,20 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::499298171619:role/PhotoUploaderGithubRole
           aws-region: us-east-1
+
+      # 🔎 Debug: proves whether AWS creds are actually available
+      - name: Debug AWS identity
+        run: |
+          aws sts get-caller-identity
+          aws configure list
+          aws s3 ls s3://photo-uploader-scorestream-com/ || true
+
+      # 🔎 Debug: confirm build output folder exists (dist vs build)
+      - name: Debug build output
+        run: |
+          ls -la
+          ls -la dist || true
+          ls -la build || true
 
       - name: Deploy to S3
         run: |
