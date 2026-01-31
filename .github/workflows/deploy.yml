@@ -4,12 +4,12 @@ on:
   push:
     branches: [main, cluade-code-rebuild]
 
-concurrency:
-  group: deploy-${{ github.ref }}
-  cancel-in-progress: true
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -17,31 +17,31 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: npm
+          node-version: "20"
+          cache: "npm"
 
       - run: npm ci
 
-      - name: Build static site
+      - name: Build
         env:
           NEXT_PUBLIC_SCORESTREAM_API_URL: ${{ vars.NEXT_PUBLIC_SCORESTREAM_API_URL }}
           NEXT_PUBLIC_SCORESTREAM_API_KEY: ${{ secrets.NEXT_PUBLIC_SCORESTREAM_API_KEY }}
           NEXT_PUBLIC_SCORESTREAM_ACCESS_TOKEN: ${{ secrets.NEXT_PUBLIC_SCORESTREAM_ACCESS_TOKEN }}
         run: npm run build
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          role-to-assume: arn:aws:iam::499298171619:role/PhotoUploaderGithubRole
+          aws-region: us-east-1
 
       - name: Deploy to S3
-        run: aws s3 sync out/ s3://${{ vars.S3_BUCKET }} --delete
+        run: aws s3 sync out s3://photo-uploader-scorestream-com/ --delete
 
-      - name: Invalidate CloudFront cache
-        if: vars.CLOUDFRONT_DISTRIBUTION_ID != ''
+      - name: Invalidate CloudFront
+        env:
+          CLOUDFRONT_DISTRIBUTION_ID: EC8335P7TPHY5
         run: |
           aws cloudfront create-invalidation \
-            --distribution-id ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
             --paths "/*"
