@@ -129,7 +129,6 @@ export default function Navigation() {
             </div>
             
             <div className="flex items-center space-x-4 text-xs text-white/60">
-              <span className="hidden md:inline">Powered by Cloudinary</span>
               <div className="flex items-center space-x-1">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 <span>Live</span>
