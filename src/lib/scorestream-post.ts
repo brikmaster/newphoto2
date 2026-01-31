@@ -1,4 +1,5 @@
 // ScoreStream photo posting service
+import { getAccessToken } from './auth';
 
 const SCORESTREAM_API_URL = process.env.NEXT_PUBLIC_SCORESTREAM_API_URL || 'https://scorestream.com/api/';
 const SCORESTREAM_API_KEY = process.env.NEXT_PUBLIC_SCORESTREAM_API_KEY || '';
@@ -99,7 +100,7 @@ export async function postPhotoToScoreStream(params: PostPhotoParams): Promise<P
 
     // Build params for the JSON-RPC request
     const rpcParams: Record<string, any> = {
-      accessToken: SCORESTREAM_ACCESS_TOKEN,
+      accessToken: getAccessToken() || SCORESTREAM_ACCESS_TOKEN,
       gameId: params.gameId,
     };
 
