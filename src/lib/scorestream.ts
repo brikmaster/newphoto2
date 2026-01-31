@@ -177,9 +177,9 @@ export class ScoreStreamService {
       jsonrpc: "2.0",
       method,
       params: {
-        ...params,
         apiKey: this.API_KEY,
         accessToken: this.ACCESS_TOKEN,
+        ...params,
       },
       id: 1,
     };
