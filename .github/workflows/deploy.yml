@@ -58,7 +58,7 @@ jobs:
 
       - name: Deploy to S3
         run: |
-          aws s3 sync dist s3://photo-uploader-scorestream-com/ --delete
+          aws s3 sync out s3://photo-uploader-scorestream-com/ --delete
 
       - name: Invalidate CloudFront (optional)
         if: ${{ env.CLOUDFRONT_DISTRIBUTION_ID != '' }}
