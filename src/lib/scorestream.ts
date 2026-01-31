@@ -51,8 +51,10 @@ export interface ScoreStreamResponse {
 }
 
 export class ScoreStreamService {
-  private static readonly API_BASE = process.env.SCORESTREAM_API_BASE || 'https://api.scorestream.com';
-  
+  private static readonly API_URL = process.env.NEXT_PUBLIC_SCORESTREAM_API_URL || 'https://scorestream.com/api/';
+  private static readonly API_KEY = process.env.NEXT_PUBLIC_SCORESTREAM_API_KEY || '';
+  private static readonly ACCESS_TOKEN = process.env.NEXT_PUBLIC_SCORESTREAM_ACCESS_TOKEN || '';
+
   /**
    * Fetch games associated with a user
    */
@@ -64,6 +66,7 @@ export class ScoreStreamService {
       });
 
       if (!response.result) {
+        console.error('ScoreStream: No result in response', response);
         throw new Error('Invalid ScoreStream response');
       }
 
@@ -131,7 +134,6 @@ export class ScoreStreamService {
       }
 
       // For now, this method is not fully implemented since we use getUserGames instead
-      // When implementing, you'd need to define a proper response type for individual games
       console.warn('getGame method not fully implemented - use getUserGames instead');
       return null;
     } catch (error) {
@@ -145,30 +147,34 @@ export class ScoreStreamService {
    */
   static formatGameDisplay(game: ScoreStreamGame): string {
     const date = new Date(game.startDateTime).toLocaleDateString();
-    const score = game.lastScore 
+    const score = game.lastScore
       ? `${game.awayTeamName} ${game.lastScore.awayTeamScore} - ${game.lastScore.homeTeamScore} ${game.homeTeamName}`
       : `${game.awayTeamName} vs ${game.homeTeamName}`;
-    
+
     return `${score} (${date})`;
   }
 
   /**
-   * Call ScoreStream API - placeholder for actual implementation
-   * You'll need to implement this based on your ScoreStream API access method
+   * Call ScoreStream API directly via JSON-RPC
    */
   private static async callScoreStreamAPI(method: string, params: any): Promise<ScoreStreamResponse> {
-    // This is a placeholder - you'll need to implement the actual API call
-    // based on how you access the ScoreStream API (direct HTTP, proxy endpoint, etc.)
-    
-    const response = await fetch('/api/scorestream-proxy', {
+    const jsonRpcRequest = {
+      jsonrpc: "2.0",
+      method,
+      params: {
+        ...params,
+        apiKey: this.API_KEY,
+        accessToken: this.ACCESS_TOKEN,
+      },
+      id: 1,
+    };
+
+    const response = await fetch(this.API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        method,
-        params
-      })
+      body: JSON.stringify(jsonRpcRequest),
     });
 
     if (!response.ok) {

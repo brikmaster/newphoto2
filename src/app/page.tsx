@@ -205,6 +205,39 @@ export default function Home() {
                 </div>
               )}
 
+              {/* Manual Game ID Entry */}
+              <div className="border-t border-gray-200 pt-6">
+                <label htmlFor="manualGameId" className="block text-sm font-semibold text-gray-700 mb-2">
+                  Or Enter Game ID Manually
+                </label>
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    id="manualGameId"
+                    value={formData.gameNumber}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFormData(prev => ({ ...prev, gameNumber: value }));
+                      if (value && /^\d+$/.test(value)) {
+                        setSelectedGameId(parseInt(value));
+                        setSelectedGameName(`Game ${value}`);
+                      } else {
+                        setSelectedGameId(null);
+                        setSelectedGameName('');
+                      }
+                      if (errors.game) {
+                        setErrors(prev => ({ ...prev, game: '' }));
+                      }
+                    }}
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-lg focus:outline-none focus:ring-2 focus:ring-[#1b95e5] focus:border-transparent"
+                    placeholder="Enter ScoreStream Game ID"
+                  />
+                </div>
+                <p className="mt-2 text-sm text-gray-500">
+                  Find the Game ID on ScoreStream (e.g., from the game URL)
+                </p>
+              </div>
+
               {/* Selected Game Display */}
               {selectedGameId && selectedGameName && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -299,8 +332,8 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-[#1b95e5] mb-3 text-center">Bulk Upload</h3>
-              <p className="text-gray-600 text-center">Upload hundreds of photos at once with our optimized bulk upload system.</p>
+              <h3 className="text-xl font-semibold text-[#1b95e5] mb-3 text-center">Quick Upload</h3>
+              <p className="text-gray-600 text-center">Select up to 10 photos at once and post them directly to your ScoreStream game.</p>
             </div>
 
             {/* Feature 2 */}
@@ -321,8 +354,8 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-[#1b95e5] mb-3 text-center">Cloud Storage</h3>
-              <p className="text-gray-600 text-center">Secure cloud storage powered by Cloudinary with automatic backups and optimization.</p>
+              <h3 className="text-xl font-semibold text-[#1b95e5] mb-3 text-center">ScoreStream Direct</h3>
+              <p className="text-gray-600 text-center">Post photos directly to ScoreStream games with captions, hashtags, and team selection.</p>
             </div>
           </div>
         </div>
@@ -332,7 +365,7 @@ export default function Home() {
       <footer className="bg-[#1b95e5] text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-blue-100">
-            Built with Next.js and Cloudinary • Professional photo management for sports teams
+            Built with Next.js • Post photos directly to ScoreStream games
           </p>
         </div>
       </footer>

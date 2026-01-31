@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     siteName: "PhotoStream",
     images: [
       {
-        url: "/api/og-image?type=simple&title=PhotoStream&subtitle=Professional%20Photo%20Management",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
         alt: "PhotoStream - Professional Photo Management",
