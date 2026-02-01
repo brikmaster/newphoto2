@@ -63,9 +63,10 @@ export class ScoreStreamService {
   static async getUserGames(userId: string): Promise<ScoreStreamGame[]> {
     try {
       // Call ScoreStream API to get user's games
-      const response = await this.callScoreStreamAPI('users.recommended.cards.search', {
+      const response = await this.callScoreStreamAPI('users.activity.cards.search', {
+        userId: parseInt(userId),
         cardTypes: ['game'],
-        count: 50,
+        limit: 50,
       });
 
       if (!response.result) {
