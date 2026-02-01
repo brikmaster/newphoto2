@@ -58,92 +58,60 @@ export class ScoreStreamService {
   private static readonly ACCESS_TOKEN = process.env.NEXT_PUBLIC_SCORESTREAM_ACCESS_TOKEN || '';
 
   /**
-   * Fetch games for a user by getting their favorite teams, then each team's activity
+   * Fetch games for a user from their activity feed
    */
   static async getUserGames(userId: string): Promise<ScoreStreamGame[]> {
     try {
-      // Step 1: Get user's subscribed teams
-      const subsResponse = await this.callScoreStreamAPI('users.teams.subscriptions.search', {
+      // Get user's activity cards — returns gameIds and gameCollection
+      const response = await this.callScoreStreamAPI('users.activity.cards.search', {
         userId: parseInt(userId),
+        count: 50,
       });
 
-      const teamIds: number[] = [];
-      const teamMap = new Map();
-
-      // Extract teams from subscriptions response
-      const result = subsResponse.result as any;
-      const teamList = result?.collections?.teamCollection?.list || [];
-      const subList = result?.collections?.userTeamSubscriptionCollection?.list
-        || result?.userTeamSubscriptions || [];
-
-      // Get team info from teamCollection
-      teamList.forEach((team: any) => {
-        if (team.teamId) {
-          teamIds.push(team.teamId);
-          teamMap.set(team.teamId, team);
-        }
-      });
-
-      // If no teams from collection, try extracting teamIds from subscriptions
-      if (teamIds.length === 0) {
-        subList.forEach((sub: any) => {
-          if (sub.teamId && !teamMap.has(sub.teamId)) {
-            teamIds.push(sub.teamId);
-            teamMap.set(sub.teamId, { teamId: sub.teamId });
-          }
-        });
+      if (!response.result) {
+        console.error('ScoreStream: No result in response', response);
+        throw new Error('Invalid ScoreStream response');
       }
 
-      if (teamIds.length === 0) {
-        console.warn('ScoreStream: No subscribed teams found for user', userId);
-        return [];
-      }
-
-      // Step 2: Fetch activity cards for each team in parallel
-      const teamResponses = await Promise.all(
-        teamIds.map(teamId =>
-          this.callScoreStreamAPI('teams.activity.cards.search', {
-            teamId,
-            count: 20,
-          }).catch(() => null)
-        )
-      );
-
-      // Step 3: Collect all games across teams, deduplicating by gameId
-      const gameMap = new Map();
-      const seen = new Set<number>();
+      const result = response.result as any;
+      const { collections } = result;
+      const gameIds: number[] = result.gameIds || [];
       const games: ScoreStreamGame[] = [];
 
-      for (const resp of teamResponses) {
-        if (!resp?.result) continue;
-        const { collections } = resp.result as any;
+      const gameData = collections?.gameCollection?.list || [];
+      const teamData = collections?.teamCollection?.list || [];
 
-        const respTeams = collections?.teamCollection?.list || [];
-        respTeams.forEach((team: any) => {
-          if (!teamMap.has(team.teamId)) teamMap.set(team.teamId, team);
-        });
+      // Create maps for quick lookup
+      const teamMap = new Map();
+      teamData.forEach((team: any) => {
+        teamMap.set(team.teamId, team);
+      });
 
-        const gameData = collections?.gameCollection?.list || [];
-        gameData.forEach((game: any) => {
-          if (game.gameId && !seen.has(game.gameId)) {
-            seen.add(game.gameId);
-            const homeTeam = teamMap.get(game.homeTeamId);
-            const awayTeam = teamMap.get(game.awayTeamId);
+      const gameMap = new Map();
+      gameData.forEach((game: any) => {
+        gameMap.set(game.gameId, game);
+      });
 
-            games.push({
-              gameId: game.gameId,
-              homeTeamId: game.homeTeamId,
-              awayTeamId: game.awayTeamId,
-              homeTeamName: homeTeam?.teamName || homeTeam?.minTeamName || `Team ${game.homeTeamId}`,
-              awayTeamName: awayTeam?.teamName || awayTeam?.minTeamName || `Team ${game.awayTeamId}`,
-              sportName: game.sportName,
-              startDateTime: game.startDateTime,
-              gameTitle: game.gameTitle,
-              lastScore: game.lastScore,
-            });
-          }
-        });
-      }
+      // Process each gameId from the response
+      gameIds.forEach((gameId: number) => {
+        const gameDetails = gameMap.get(gameId);
+        if (gameDetails) {
+          const homeTeam = teamMap.get(gameDetails.homeTeamId);
+          const awayTeam = teamMap.get(gameDetails.awayTeamId);
+
+          games.push({
+            gameId: gameId,
+            homeTeamId: gameDetails.homeTeamId,
+            awayTeamId: gameDetails.awayTeamId,
+            homeTeamName: homeTeam?.teamName || homeTeam?.minTeamName || `Team ${gameDetails.homeTeamId}`,
+            awayTeamName: awayTeam?.teamName || awayTeam?.minTeamName || `Team ${gameDetails.awayTeamId}`,
+            sportName: gameDetails.sportName,
+            startDateTime: gameDetails.startDateTime,
+            gameTitle: gameDetails.gameTitle,
+            lastScore: gameDetails.lastScore,
+          });
+        }
+      });
 
       // Sort games by date (most recent first)
       games.sort((a, b) => new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime());
