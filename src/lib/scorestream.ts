@@ -64,7 +64,8 @@ export class ScoreStreamService {
     try {
       // Call ScoreStream API to get user's games
       const response = await this.callScoreStreamAPI('users.recommended.cards.search', {
-        userId: parseInt(userId),
+        cardTypes: ['game'],
+        count: 50,
       });
 
       if (!response.result) {
@@ -72,10 +73,11 @@ export class ScoreStreamService {
         throw new Error('Invalid ScoreStream response');
       }
 
-      const { collections, gameIds } = response.result as any;
+      const { collections, cardIds } = response.result as any;
       const games: ScoreStreamGame[] = [];
 
       // Get data from collections
+      const cardData = collections?.cardCollection?.list || [];
       const gameData = collections?.gameCollection?.list || [];
       const teamData = collections?.teamCollection?.list || [];
 
@@ -91,15 +93,25 @@ export class ScoreStreamService {
         gameMap.set(game.gameId, game);
       });
 
-      // Process each gameId
-      (gameIds || []).forEach((gameId: number) => {
-        const gameDetails = gameMap.get(gameId);
+      // Create a map of cards to get gameIds
+      const cardMap = new Map();
+      cardData.forEach((card: any) => {
+        cardMap.set(card.cardId, card);
+      });
+
+      // Process each card to extract games
+      const seen = new Set<number>();
+      (cardIds || []).forEach((cardId: number) => {
+        const card = cardMap.get(cardId);
+        if (!card?.gameId || seen.has(card.gameId)) return;
+        seen.add(card.gameId);
+        const gameDetails = gameMap.get(card.gameId);
         if (gameDetails) {
           const homeTeam = teamMap.get(gameDetails.homeTeamId);
           const awayTeam = teamMap.get(gameDetails.awayTeamId);
 
           games.push({
-            gameId: gameId,
+            gameId: card.gameId,
             homeTeamId: gameDetails.homeTeamId,
             awayTeamId: gameDetails.awayTeamId,
             homeTeamName: homeTeam?.teamName || homeTeam?.minTeamName || `Team ${gameDetails.homeTeamId}`,
