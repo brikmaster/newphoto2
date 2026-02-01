@@ -63,7 +63,7 @@ export class ScoreStreamService {
   static async getUserGames(userId: string): Promise<ScoreStreamGame[]> {
     try {
       // Call ScoreStream API to get user's games
-      const response = await this.callScoreStreamAPI('users.games.search', {
+      const response = await this.callScoreStreamAPI('users.recommended.cards.search', {
         userId: parseInt(userId),
       });
 
