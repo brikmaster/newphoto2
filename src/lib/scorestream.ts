@@ -58,13 +58,13 @@ export class ScoreStreamService {
   private static readonly ACCESS_TOKEN = process.env.NEXT_PUBLIC_SCORESTREAM_ACCESS_TOKEN || '';
 
   /**
-   * Fetch games for a user from their activity feed
+   * Fetch games from the user's recommended feed (same as ScoreStream's main feed)
    */
-  static async getUserGames(userId: string): Promise<ScoreStreamGame[]> {
+  static async getUserGames(_userId: string): Promise<ScoreStreamGame[]> {
     try {
-      // Get user's activity cards — returns gameIds and gameCollection
-      const response = await this.callScoreStreamAPI('users.activity.cards.search', {
-        userId: parseInt(userId),
+      // Use users.recommended.cards.search — authenticates via accessToken
+      const response = await this.callScoreStreamAPI('users.recommended.cards.search', {
+        cardTypes: ['game'],
         count: 50,
       });
 
@@ -75,9 +75,10 @@ export class ScoreStreamService {
 
       const result = response.result as any;
       const { collections } = result;
-      const gameIds: number[] = result.gameIds || [];
+      const cardIds: number[] = result.cardIds || [];
       const games: ScoreStreamGame[] = [];
 
+      const cardData = collections?.cardCollection?.list || [];
       const gameData = collections?.gameCollection?.list || [];
       const teamData = collections?.teamCollection?.list || [];
 
@@ -92,15 +93,25 @@ export class ScoreStreamService {
         gameMap.set(game.gameId, game);
       });
 
-      // Process each gameId from the response
-      gameIds.forEach((gameId: number) => {
-        const gameDetails = gameMap.get(gameId);
+      const cardMap = new Map();
+      cardData.forEach((card: any) => {
+        cardMap.set(card.cardId, card);
+      });
+
+      // Process each card to extract games, preserving feed order
+      const seen = new Set<number>();
+      cardIds.forEach((cardId: number) => {
+        const card = cardMap.get(cardId);
+        if (!card?.gameId || seen.has(card.gameId)) return;
+        seen.add(card.gameId);
+
+        const gameDetails = gameMap.get(card.gameId);
         if (gameDetails) {
           const homeTeam = teamMap.get(gameDetails.homeTeamId);
           const awayTeam = teamMap.get(gameDetails.awayTeamId);
 
           games.push({
-            gameId: gameId,
+            gameId: card.gameId,
             homeTeamId: gameDetails.homeTeamId,
             awayTeamId: gameDetails.awayTeamId,
             homeTeamName: homeTeam?.teamName || homeTeam?.minTeamName || `Team ${gameDetails.homeTeamId}`,
