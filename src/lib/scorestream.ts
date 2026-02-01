@@ -62,17 +62,21 @@ export class ScoreStreamService {
    */
   static async getUserGames(userId: string): Promise<ScoreStreamGame[]> {
     try {
-      // Step 1: Get user's favorite teams
-      const teamsResponse = await this.callScoreStreamAPI('users.getFavoriteTeams', {
+      // Step 1: Get user's subscribed teams
+      const subsResponse = await this.callScoreStreamAPI('users.teams.subscriptions.search', {
         userId: parseInt(userId),
       });
 
       const teamIds: number[] = [];
       const teamMap = new Map();
 
-      const teamList = (teamsResponse.result as any)?.collections?.teamCollection?.list
-        || (teamsResponse.result as any)?.teams
-        || [];
+      // Extract teams from subscriptions response
+      const result = subsResponse.result as any;
+      const teamList = result?.collections?.teamCollection?.list || [];
+      const subList = result?.collections?.userTeamSubscriptionCollection?.list
+        || result?.userTeamSubscriptions || [];
+
+      // Get team info from teamCollection
       teamList.forEach((team: any) => {
         if (team.teamId) {
           teamIds.push(team.teamId);
@@ -80,8 +84,18 @@ export class ScoreStreamService {
         }
       });
 
+      // If no teams from collection, try extracting teamIds from subscriptions
       if (teamIds.length === 0) {
-        console.warn('ScoreStream: No favorite teams found for user', userId);
+        subList.forEach((sub: any) => {
+          if (sub.teamId && !teamMap.has(sub.teamId)) {
+            teamIds.push(sub.teamId);
+            teamMap.set(sub.teamId, { teamId: sub.teamId });
+          }
+        });
+      }
+
+      if (teamIds.length === 0) {
+        console.warn('ScoreStream: No subscribed teams found for user', userId);
         return [];
       }
 
