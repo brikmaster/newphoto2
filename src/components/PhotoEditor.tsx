@@ -23,9 +23,6 @@ export default function PhotoEditor({ photos: initialPhotos, gameId, gameName, o
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [publishResult, setPublishResult] = useState<BatchPostResult | null>(null);
 
-  // Simple tags state - one string per photo ID
-  const [simpleTags, setSimpleTags] = useState<Record<string, string>>({});
-
   // Initialize photos from props
   useEffect(() => {
     if (initialPhotos && initialPhotos.length > 0) {
@@ -42,20 +39,6 @@ export default function PhotoEditor({ photos: initialPhotos, gameId, gameName, o
     setPhotos(prev => prev.map(photo =>
       photo.id === photoId
         ? { ...photo, description, hasChanges: true }
-        : photo
-    ));
-  };
-
-  // Handle tag changes
-  const handleTagsChange = (photoId: string, value: string) => {
-    setSimpleTags(prev => ({
-      ...prev,
-      [photoId]: value
-    }));
-
-    setPhotos(prev => prev.map(photo =>
-      photo.id === photoId
-        ? { ...photo, hasChanges: true }
         : photo
     ));
   };
@@ -78,11 +61,6 @@ export default function PhotoEditor({ photos: initialPhotos, gameId, gameName, o
       }
       return prev.filter(p => p.id !== photoId);
     });
-    setSimpleTags(prev => {
-      const newTags = { ...prev };
-      delete newTags[photoId];
-      return newTags;
-    });
   };
 
   // Publish photos to ScoreStream
@@ -98,22 +76,13 @@ export default function PhotoEditor({ photos: initialPhotos, gameId, gameName, o
     setPublishResult(null);
 
     // Prepare post parameters
-    const postParams: PostPhotoParams[] = photos.map(photo => {
-      const tagsString = simpleTags[photo.id] || '';
-      const processedTags = tagsString
-        .split(',')
-        .map(tag => tag.trim())
-        .filter(tag => tag.length > 0)
-        .map(tag => tag.startsWith('#') ? tag : `#${tag}`);
-
-      return {
-        gameId,
-        file: photo.file,
-        userText: photo.description || undefined,
-        hashTags: processedTags.length > 0 ? processedTags : undefined,
-        teamSelection: photo.teamSelection ? (photo.teamSelection as 'home' | 'away' | 'none') : undefined,
-      };
-    });
+    const postParams: PostPhotoParams[] = photos.map(photo => ({
+      gameId,
+      file: photo.file,
+      userText: photo.description || undefined,
+      type: photo.type,
+      teamSelection: photo.teamSelection ? (photo.teamSelection as 'home' | 'away' | 'none') : undefined,
+    }));
 
     try {
       const result = await postMultiplePhotos(
@@ -136,7 +105,6 @@ export default function PhotoEditor({ photos: initialPhotos, gameId, gameName, o
           if (photo.preview) URL.revokeObjectURL(photo.preview);
         });
         setPhotos([]);
-        setSimpleTags({});
       } else if (result.successCount > 0) {
         setMessage({
           type: 'error',
@@ -207,7 +175,7 @@ export default function PhotoEditor({ photos: initialPhotos, gameId, gameName, o
             Edit Photos
           </h1>
           <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-            Add descriptions, hashtags, and select team before posting to ScoreStream.
+            Add descriptions and select team before posting to ScoreStream.
           </p>
           <div className="mt-4 bg-blue-50 rounded-lg p-3 inline-block">
             <p className="text-[#1b95e5] font-medium">
@@ -337,11 +305,21 @@ export default function PhotoEditor({ photos: initialPhotos, gameId, gameName, o
               <div key={photo.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
                 {/* Photo Display */}
                 <div className="relative">
-                  <img
-                    src={photo.preview}
-                    alt={photo.file.name}
-                    className="w-full h-48 object-cover"
-                  />
+                  {photo.type === 'video' ? (
+                    <video
+                      src={photo.preview}
+                      className="w-full h-48 object-cover"
+                      muted
+                      playsInline
+                      controls
+                    />
+                  ) : (
+                    <img
+                      src={photo.preview}
+                      alt={photo.file.name}
+                      className="w-full h-48 object-cover"
+                    />
+                  )}
                   <button
                     onClick={() => handleRemovePhoto(photo.id)}
                     className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors"
@@ -375,23 +353,6 @@ export default function PhotoEditor({ photos: initialPhotos, gameId, gameName, o
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1b95e5] focus:border-transparent resize-none"
                       rows={2}
                     />
-                  </div>
-
-                  {/* Tags Input */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Hashtags
-                    </label>
-                    <input
-                      type="text"
-                      value={simpleTags[photo.id] || ''}
-                      onChange={(e) => handleTagsChange(photo.id, e.target.value)}
-                      placeholder="#tag1, #tag2, #tag3..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#1b95e5] focus:border-transparent"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Separate with commas (# added automatically)
-                    </p>
                   </div>
 
                   {/* Team Selection */}

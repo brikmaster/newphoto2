@@ -70,7 +70,7 @@ export interface PostPhotoParams {
   gameId: number;
   file: File;
   userText?: string;
-  hashTags?: string[];
+  type?: 'photo' | 'video';
   teamSelection?: 'home' | 'away' | 'none';
 }
 
@@ -95,8 +95,8 @@ export interface BatchPostResult {
  */
 export async function postPhotoToScoreStream(params: PostPhotoParams): Promise<PostResult> {
   try {
-    // Only compress if file is very large (>10MB)
-    const fileToUpload = await compressIfNeeded(params.file);
+    // Skip compression for videos (canvas API doesn't support video)
+    const fileToUpload = params.type === 'video' ? params.file : await compressIfNeeded(params.file);
 
     // Build params for the JSON-RPC request
     const rpcParams: Record<string, any> = {
@@ -108,14 +108,8 @@ export async function postPhotoToScoreStream(params: PostPhotoParams): Promise<P
       rpcParams.apiKey = SCORESTREAM_API_KEY;
     }
 
-    // Combine userText and hashTags
-    let combinedText = params.userText || '';
-    if (params.hashTags && params.hashTags.length > 0) {
-      const tagsString = params.hashTags.join(' ');
-      combinedText = combinedText ? `${combinedText}\n\nTags: ${tagsString}` : `Tags: ${tagsString}`;
-    }
-    if (combinedText) {
-      rpcParams.userText = combinedText;
+    if (params.userText) {
+      rpcParams.userText = params.userText;
     }
     if (params.teamSelection) {
       rpcParams.teamSelection = params.teamSelection;

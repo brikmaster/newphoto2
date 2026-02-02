@@ -3,7 +3,7 @@
 export interface ScoreStreamPostParams {
   gameId: number;
   userText?: string;
-  hashTags?: string[];
+
   teamSelection?: 'home' | 'away' | 'none' | '';
   backgroundPictureSettings?: {
     x: number;
@@ -29,7 +29,7 @@ export interface LocalPhoto {
   file: File;
   preview: string;
   description: string;
-  tags: string[];
+  type: 'photo' | 'video';
   teamSelection: 'home' | 'away' | 'none' | '';
   status: 'pending' | 'ready' | 'posting' | 'posted' | 'error';
   error?: string;

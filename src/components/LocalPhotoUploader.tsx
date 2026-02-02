@@ -8,7 +8,7 @@ export interface LocalPhoto {
   file: File;
   preview: string;
   description: string;
-  tags: string[];
+  type: 'photo' | 'video';
   teamSelection: 'home' | 'away' | 'none' | '';
   status: 'pending' | 'ready';
 }
@@ -53,7 +53,7 @@ export default function LocalPhotoUploader({
       file,
       preview: URL.createObjectURL(file),
       description: '',
-      tags: [],
+      type: file.type.startsWith('video/') ? 'video' as const : 'photo' as const,
       teamSelection: '',
       status: 'pending',
     }));
@@ -64,7 +64,8 @@ export default function LocalPhotoUploader({
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp']
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp'],
+      'video/mp4': ['.mp4']
     },
     maxSize: MAX_FILE_SIZE,
     multiple: true,
@@ -75,7 +76,7 @@ export default function LocalPhotoUploader({
           return `${file.name} is too large (max ${MAX_FILE_SIZE / 1024 / 1024}MB)`;
         }
         if (errors.some(e => e.code === 'file-invalid-type')) {
-          return `${file.name} is not a valid image file`;
+          return `${file.name} is not a valid image or video file`;
         }
         return `${file.name} was rejected`;
       });
@@ -170,7 +171,7 @@ export default function LocalPhotoUploader({
             )}
           </div>
           <p className="text-xs text-gray-400">
-            Supports JPG, PNG, GIF, WebP | Max 10MB per file | Max {maxPhotos} photos
+            Supports JPG, PNG, GIF, WebP, MP4 | Max 10MB per file | Max {maxPhotos} files
           </p>
         </div>
       </div>
@@ -200,11 +201,20 @@ export default function LocalPhotoUploader({
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {photos.map((photo) => (
               <div key={photo.id} className="relative group">
-                <img
-                  src={photo.preview}
-                  alt={photo.file.name}
-                  className="w-full h-32 object-cover rounded-lg"
-                />
+                {photo.type === 'video' ? (
+                  <video
+                    src={photo.preview}
+                    className="w-full h-32 object-cover rounded-lg"
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <img
+                    src={photo.preview}
+                    alt={photo.file.name}
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                )}
                 <button
                   onClick={() => removePhoto(photo.id)}
                   className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -232,7 +242,7 @@ export default function LocalPhotoUploader({
             Continue to Edit ({photos.length} photos)
           </button>
           <p className="text-sm text-gray-500 mt-2">
-            Add descriptions, tags, and team selection before posting
+            Add descriptions and select team before posting
           </p>
         </div>
       )}
