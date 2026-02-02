@@ -80,6 +80,7 @@ export default function PhotoEditor({ photos: initialPhotos, gameId, gameName, o
       gameId,
       file: photo.file,
       userText: photo.description || undefined,
+      type: photo.type,
       teamSelection: photo.teamSelection ? (photo.teamSelection as 'home' | 'away' | 'none') : undefined,
     }));
 
@@ -304,11 +305,21 @@ export default function PhotoEditor({ photos: initialPhotos, gameId, gameName, o
               <div key={photo.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
                 {/* Photo Display */}
                 <div className="relative">
-                  <img
-                    src={photo.preview}
-                    alt={photo.file.name}
-                    className="w-full h-48 object-cover"
-                  />
+                  {photo.type === 'video' ? (
+                    <video
+                      src={photo.preview}
+                      className="w-full h-48 object-cover"
+                      muted
+                      playsInline
+                      controls
+                    />
+                  ) : (
+                    <img
+                      src={photo.preview}
+                      alt={photo.file.name}
+                      className="w-full h-48 object-cover"
+                    />
+                  )}
                   <button
                     onClick={() => handleRemovePhoto(photo.id)}
                     className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors"

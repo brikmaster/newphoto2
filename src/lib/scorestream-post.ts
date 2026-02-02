@@ -70,6 +70,7 @@ export interface PostPhotoParams {
   gameId: number;
   file: File;
   userText?: string;
+  type?: 'photo' | 'video';
   teamSelection?: 'home' | 'away' | 'none';
 }
 
@@ -94,7 +95,8 @@ export interface BatchPostResult {
  */
 export async function postPhotoToScoreStream(params: PostPhotoParams): Promise<PostResult> {
   try {
-    const fileToUpload = await compressIfNeeded(params.file);
+    const isVideo = params.type === 'video';
+    const fileToUpload = isVideo ? params.file : await compressIfNeeded(params.file);
 
     // Build params for the JSON-RPC request
     const rpcParams: Record<string, any> = {
@@ -122,7 +124,11 @@ export async function postPhotoToScoreStream(params: PostPhotoParams): Promise<P
 
     const formData = new FormData();
     formData.append('request', JSON.stringify(jsonRpcRequest));
-    formData.append('backgroundPicture', fileToUpload);
+    if (isVideo) {
+      formData.append('video', fileToUpload);
+    } else {
+      formData.append('backgroundPicture', fileToUpload);
+    }
 
     const response = await fetch(SCORESTREAM_API_URL, {
       method: 'POST',
