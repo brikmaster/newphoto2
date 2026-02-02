@@ -383,7 +383,7 @@ export default function Home() {
                 </svg>
               </div>
               <h3 className="text-xl font-semibold text-[#1b95e5] mb-3 text-center">ScoreStream Direct</h3>
-              <p className="text-gray-600 text-center">Post photos and videos directly to ScoreStream games with captions and team selection.</p>
+              <p className="text-gray-600 text-center">Post photos directly to ScoreStream games with captions and team selection.</p>
             </div>
           </div>
         </div>

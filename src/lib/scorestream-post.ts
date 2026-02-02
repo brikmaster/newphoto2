@@ -70,7 +70,6 @@ export interface PostPhotoParams {
   gameId: number;
   file: File;
   userText?: string;
-  type?: 'photo' | 'video';
   teamSelection?: 'home' | 'away' | 'none';
 }
 
@@ -95,24 +94,7 @@ export interface BatchPostResult {
  */
 export async function postPhotoToScoreStream(params: PostPhotoParams): Promise<PostResult> {
   try {
-    console.log('[DEBUG] postPhotoToScoreStream called with:', {
-      fileName: params.file.name,
-      fileSize: `${(params.file.size / 1024 / 1024).toFixed(2)}MB`,
-      fileType: params.file.type,
-      mediaType: params.type,
-      gameId: params.gameId,
-      teamSelection: params.teamSelection,
-      hasUserText: !!params.userText,
-    });
-
-    // Skip compression for videos (canvas API doesn't support video)
-    const fileToUpload = params.type === 'video' ? params.file : await compressIfNeeded(params.file);
-
-    console.log('[DEBUG] File to upload:', {
-      name: fileToUpload.name,
-      size: `${(fileToUpload.size / 1024 / 1024).toFixed(2)}MB`,
-      type: fileToUpload.type,
-    });
+    const fileToUpload = await compressIfNeeded(params.file);
 
     // Build params for the JSON-RPC request
     const rpcParams: Record<string, any> = {
@@ -138,25 +120,16 @@ export async function postPhotoToScoreStream(params: PostPhotoParams): Promise<P
       id: 1,
     };
 
-    console.log('[DEBUG] JSON-RPC request:', JSON.stringify(jsonRpcRequest, null, 2));
-
     const formData = new FormData();
     formData.append('request', JSON.stringify(jsonRpcRequest));
     formData.append('backgroundPicture', fileToUpload);
-
-    console.log('[DEBUG] Sending fetch to:', SCORESTREAM_API_URL);
 
     const response = await fetch(SCORESTREAM_API_URL, {
       method: 'POST',
       body: formData,
     });
 
-    console.log('[DEBUG] Response status:', response.status, response.statusText);
-    console.log('[DEBUG] Response headers:', Object.fromEntries(response.headers.entries()));
-
     const responseText = await response.text();
-    console.log('[DEBUG] Raw response body:', responseText.substring(0, 2000));
-
     let data;
     try {
       data = JSON.parse(responseText);
@@ -164,11 +137,12 @@ export async function postPhotoToScoreStream(params: PostPhotoParams): Promise<P
       data = { error: 'Invalid response from ScoreStream API' };
     }
 
-    console.log('[DEBUG] Parsed response:', JSON.stringify(data, null, 2));
-
-    if (!response.ok || data.error) {
-      const errorMsg = data.error?.message || data.error || `HTTP ${response.status}`;
-      console.log('[DEBUG] Post FAILED:', errorMsg);
+    // Check for errors: top-level error, HTTP failure, or paramErrors in result
+    if (!response.ok || data.error || data.result?.paramErrors?.length > 0) {
+      const errorMsg = data.result?.paramErrors?.[0]?.message
+        || data.error?.message
+        || data.error
+        || `HTTP ${response.status}`;
       return {
         success: false,
         fileName: params.file.name,
@@ -176,14 +150,12 @@ export async function postPhotoToScoreStream(params: PostPhotoParams): Promise<P
       };
     }
 
-    console.log('[DEBUG] Post SUCCESS:', data.result);
     return {
       success: true,
       fileName: params.file.name,
       postId: data.result?.postId || data.result?.gamePostId,
     };
   } catch (error) {
-    console.error('[DEBUG] Post EXCEPTION:', error);
     return {
       success: false,
       fileName: params.file.name,
