@@ -65,7 +65,7 @@ export default function LocalPhotoUploader({
     onDrop,
     accept: {
       'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp'],
-      'video/mp4': ['.mp4']
+      'video/*': ['.mp4', '.mov']
     },
     maxSize: MAX_FILE_SIZE,
     multiple: true,
